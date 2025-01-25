@@ -571,16 +571,12 @@ __name(restoreData, "restoreData");
 // src/main.ts
 var appContext = {
   BYPASS_PIN: true,
-  // bypass user PIN input?
   DEV: true,
-  // enable logging
   LOCAL_DB: true,
-  // run from local dataService
   LocalDbURL: "http://localhost:9099/",
   RemoteDbURL: "https://kv-pwa-rpc.deno.dev/",
   RpcURL: "SSERPC/kvRegistration",
   PIN: "",
-  // Encrypted PIN from KvDB
   dbOptions: {
     schema: {
       dbKey: "BP",
@@ -588,6 +584,7 @@ var appContext = {
         expense: "Z",
         account: "",
         amount: "",
+        when: "",
         auto: true
       }
     }
