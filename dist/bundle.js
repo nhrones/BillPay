@@ -381,9 +381,7 @@ var KvClient = class {
       "GET",
       { key: [this.CTX.dbOptions.schema.dbKey] }
     ).then((result) => {
-      const re = signals.xorEncrypt(result.value);
-      const refix = re.replace("null", `"XYZ"`);
-      this.kvCache.restoreCache(refix);
+      this.kvCache.restoreCache(signals.xorEncrypt(result.value));
     });
   }
   /** get row from key */
