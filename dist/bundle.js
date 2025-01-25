@@ -569,10 +569,11 @@ function restoreData() {
 __name(restoreData, "restoreData");
 
 // src/main.ts
+var DEV_Mode = false;
 var appContext = {
-  BYPASS_PIN: true,
-  DEV: true,
-  LOCAL_DB: true,
+  BYPASS_PIN: DEV_Mode,
+  DEV: DEV_Mode,
+  LOCAL_DB: DEV_Mode,
   LocalDbURL: "http://localhost:9099/",
   RemoteDbURL: "https://kv-dt-rpc.deno.dev/",
   RpcURL: "SSERPC/kvRegistration",
