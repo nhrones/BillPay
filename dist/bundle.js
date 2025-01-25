@@ -88,14 +88,16 @@ function makeEditableRow(kvCache) {
       focusedCell.onblur = () => {
         let key = focusedRow.dataset.cache_key;
         const col = focusedCell.dataset.column_id || 0;
-        console.log(`focusedCell.onblur key: ${key} col: ${col}`);
+        const columnIndex = focusedCell.dataset.column_index || 0;
+        console.log(`focusedCell.onblur key: ${key} col: ${col}, columnIndex ${columnIndex}`);
         console.info("kvCache", kvCache.dbMap);
         const rowObj = kvCache.get(key);
         const currentValue = rowObj[col];
         const thisValue = focusedCell.textContent;
         if (currentValue !== thisValue) {
           rowObj[col] = thisValue;
-          if (col === "expense") {
+          if (columnIndex === 0) {
+            console.log("FIXING KEY");
             const newKey = thisValue;
             if (key !== newKey) {
               kvCache.delete(key);
@@ -151,7 +153,7 @@ function buildDataTable(kvCache) {
         `;
       for (let i2 = 0; i2 < kvCache.columns.length; i2++) {
         const ro = kvCache.columns[i2].readOnly ? " read-only" : "";
-        row += `<td data-column_id="${kvCache.columns[i2].name}"${ro}>${obj[kvCache.columns[i2].name]}</td>
+        row += `<td data-column_index=${i2} data-column_id="${kvCache.columns[i2].name}"${ro}>${obj[kvCache.columns[i2].name]}</td>
             `;
       }
       row += "</tr>";
@@ -161,7 +163,6 @@ function buildDataTable(kvCache) {
   for (let i = 0; i < kvCache.columns.length; i++) {
     const el = document.getElementById(`header${i + 1}`);
     el.onclick = (_e) => {
-      console.log(`header ${el.id} clicked`);
       resetFocusedRow();
       buildDataTable(kvCache);
     };
@@ -177,7 +178,8 @@ var table = document.getElementById("table");
 function buildFooter(kvCache) {
   addBtn2.onclick = (_e) => {
     const newRow = Object.assign({}, kvCache.schema.sample);
-    kvCache.set(newRow.host, newRow);
+    const firstColName = Object.keys(newRow)[0];
+    kvCache.set(newRow[firstColName], newRow);
     buildDataTable(kvCache);
     const lastRow = table.rows[table.rows.length - 1];
     lastRow.scrollIntoView({ behavior: "smooth" });
@@ -379,7 +381,9 @@ var KvClient = class {
       "GET",
       { key: [this.CTX.dbOptions.schema.dbKey] }
     ).then((result) => {
-      this.kvCache.restoreCache(signals.xorEncrypt(result.value));
+      const re = signals.xorEncrypt(result.value);
+      const refix = re.replace("null", `"XYZ"`);
+      this.kvCache.restoreCache(refix);
     });
   }
   /** get row from key */
@@ -501,7 +505,7 @@ var KvCache = class {
    * Persist the current dbMap to Kv   
    * This is called for any mutation of the dbMap (set/delete)
    */
-  persist(order = false) {
+  persist(order = true) {
     if (this.DEV) console.log("Persisting -> sorted? ", order);
     if (order) {
       this.dbMap = new Map([...this.dbMap.entries()].sort());
