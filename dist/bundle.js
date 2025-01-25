@@ -2,7 +2,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// src/signals.ts
+// ../signals.ts
 function buildEventBus() {
   const eventSubscriptions = /* @__PURE__ */ new Map();
   const newEventBus = {
@@ -52,7 +52,7 @@ function buildEventBus() {
 __name(buildEventBus, "buildEventBus");
 var signals = buildEventBus();
 
-// data/kvClient.ts
+// ../data/kvClient.ts
 var KvClient = class {
   static {
     __name(this, "KvClient");
@@ -192,7 +192,7 @@ var KvClient = class {
   }
 };
 
-// data/kvCache.ts
+// ../data/kvCache.ts
 var KvCache = class {
   static {
     __name(this, "KvCache");
@@ -323,7 +323,7 @@ var KvCache = class {
   }
 };
 
-// view/mutableTableRow.ts
+// ../view/mutableTableRow.ts
 var deleteBtn = document.getElementById("deletebtn");
 var addBtn = document.getElementById("addbtn");
 var focusedRow;
@@ -386,7 +386,7 @@ function makeEditableRow(kvCache) {
 }
 __name(makeEditableRow, "makeEditableRow");
 
-// view/customDataTable.ts
+// ../view/customDataTable.ts
 var tablehead = document.getElementById("table-head");
 var tableBody;
 function buildTableHead(kvCache) {
@@ -466,7 +466,7 @@ signals.on("buildDataTable", "", (cache) => {
   buildDataTable(cache);
 });
 
-// view/dom.ts
+// ../view/dom.ts
 var $ = /* @__PURE__ */ __name((id) => document.getElementById(id), "$");
 var on = /* @__PURE__ */ __name((elem, event, listener) => {
   return elem.addEventListener(event, listener);
