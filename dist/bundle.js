@@ -587,7 +587,7 @@ var appContext = {
     schema: {
       dbKey: "BP",
       sample: {
-        expense: "XYZ",
+        expense: "Z",
         account: "",
         amount: "",
         auto: true
