@@ -2,7 +2,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// ../signals.ts
+// ../shared/signals.ts
 function buildEventBus() {
   const eventSubscriptions = /* @__PURE__ */ new Map();
   const newEventBus = {
