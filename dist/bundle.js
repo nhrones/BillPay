@@ -574,7 +574,7 @@ var appContext = {
   DEV: true,
   LOCAL_DB: true,
   LocalDbURL: "http://localhost:9099/",
-  RemoteDbURL: "https://kv-pwa-rpc.deno.dev/",
+  RemoteDbURL: "https://kv-dt-rpc.deno.dev/",
   RpcURL: "SSERPC/kvRegistration",
   PIN: "",
   dbOptions: {
