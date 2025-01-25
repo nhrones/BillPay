@@ -52,7 +52,7 @@ function buildEventBus() {
 __name(buildEventBus, "buildEventBus");
 var signals = buildEventBus();
 
-// ../data/kvClient.ts
+// ../KvDataService/kvClient.ts
 var KvClient = class {
   static {
     __name(this, "KvClient");
@@ -192,7 +192,7 @@ var KvClient = class {
   }
 };
 
-// ../data/kvCache.ts
+// ../KvDataService/kvCache.ts
 var KvCache = class {
   static {
     __name(this, "KvCache");
@@ -323,7 +323,7 @@ var KvCache = class {
   }
 };
 
-// ../view/mutableTableRow.ts
+// ../CustomDataTable/mutableTableRow.ts
 var deleteBtn = document.getElementById("deletebtn");
 var addBtn = document.getElementById("addbtn");
 var focusedRow;
@@ -386,7 +386,7 @@ function makeEditableRow(kvCache) {
 }
 __name(makeEditableRow, "makeEditableRow");
 
-// ../view/customDataTable.ts
+// ../CustomDataTable/customDataTable.ts
 var tablehead = document.getElementById("table-head");
 var tableBody;
 function buildTableHead(kvCache) {
@@ -466,7 +466,7 @@ signals.on("buildDataTable", "", (cache) => {
   buildDataTable(cache);
 });
 
-// ../view/dom.ts
+// ../CustomDataTable/dom.ts
 var $ = /* @__PURE__ */ __name((id) => document.getElementById(id), "$");
 var on = /* @__PURE__ */ __name((elem, event, listener) => {
   return elem.addEventListener(event, listener);
@@ -585,7 +585,8 @@ var appContext = {
         account: "",
         amount: "",
         when: "",
-        auto: true
+        auto: true,
+        comments: ""
       }
     }
   }
