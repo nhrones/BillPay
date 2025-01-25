@@ -52,252 +52,7 @@ function buildEventBus() {
 __name(buildEventBus, "buildEventBus");
 var signals = buildEventBus();
 
-// src/view/mutableTableRow.ts
-var deleteBtn = document.getElementById("deletebtn");
-var addBtn = document.getElementById("addbtn");
-var focusedRow;
-var focusedCell;
-function resetFocusedRow() {
-  deleteBtn.setAttribute("hidden", "");
-  addBtn.removeAttribute("hidden");
-  focusedRow = null;
-}
-__name(resetFocusedRow, "resetFocusedRow");
-function makeEditableRow(kvCache) {
-  const rows = document.querySelectorAll("tr");
-  for (const row of Array.from(rows)) {
-    if (row.className.startsWith("headerRow")) continue;
-    row.onclick = (e) => {
-      const target = e.target;
-      if (focusedRow && focusedCell && e.target != focusedCell) {
-        focusedCell.removeAttribute("contenteditable");
-        focusedCell.className = "";
-        focusedCell.oninput = null;
-      }
-      focusedRow?.classList.remove("selected_row");
-      focusedRow = row;
-      focusedRow.classList.add("selected_row");
-      addBtn.setAttribute("hidden", "");
-      deleteBtn.removeAttribute("hidden");
-      if (target.attributes.getNamedItem("read-only")) {
-        return;
-      }
-      focusedCell = e.target;
-      focusedCell.setAttribute("contenteditable", "");
-      focusedCell.className = "editable ";
-      focusedCell.onblur = () => {
-        let key = focusedRow.dataset.cache_key;
-        const col = focusedCell.dataset.column_id || 0;
-        const columnIndex = focusedCell.dataset.column_index || 0;
-        console.log(`focusedCell.onblur key: ${key} col: ${col}, columnIndex ${columnIndex}`);
-        console.info("kvCache", kvCache.dbMap);
-        const rowObj = kvCache.get(key);
-        const currentValue = rowObj[col];
-        const thisValue = focusedCell.textContent;
-        if (currentValue !== thisValue) {
-          rowObj[col] = thisValue;
-          if (columnIndex === 0) {
-            console.log("FIXING KEY");
-            const newKey = thisValue;
-            if (key !== newKey) {
-              kvCache.delete(key);
-              key = thisValue;
-              kvCache.set(key, rowObj);
-            }
-          }
-        } else {
-          kvCache.set(key, rowObj);
-        }
-      };
-    };
-  }
-  focusedCell?.focus();
-}
-__name(makeEditableRow, "makeEditableRow");
-
-// src/view/customDataTable.ts
-var tablehead = document.getElementById("table-head");
-var tableBody;
-function buildTableHead(kvCache) {
-  const tr = `
-<tr class="headerRow">
-`;
-  let th = "";
-  for (let i = 0; i < kvCache.columns.length; i++) {
-    if (i === 1) {
-      th += `    <th id="header${i + 1}" 
-   data-index=${i} value=1> ${kvCache.columns[i].name} 
-</th>
-`;
-    } else {
-      th += `    <th id="header${i + 1}" 
-   data-index=${i} value=1> ${kvCache.columns[i].name} 
-</th>
-`;
-    }
-  }
-  tablehead.innerHTML += tr + th;
-  tablehead.innerHTML += `</tr>`;
-}
-__name(buildTableHead, "buildTableHead");
-function buildDataTable(kvCache) {
-  if (!tableBody) {
-    tableBody = document.getElementById("table-body");
-  }
-  const querySet = kvCache.querySet;
-  tableBody.innerHTML = "";
-  if (querySet) {
-    for (let i = 0; i < querySet.length; i++) {
-      const obj = querySet[i];
-      let row = `<tr data-cache_key="${obj[kvCache.columns[0].name]}">
-        `;
-      for (let i2 = 0; i2 < kvCache.columns.length; i2++) {
-        const ro = kvCache.columns[i2].readOnly ? " read-only" : "";
-        row += `<td data-column_index=${i2} data-column_id="${kvCache.columns[i2].name}"${ro}>${obj[kvCache.columns[i2].name]}</td>
-            `;
-      }
-      row += "</tr>";
-      tableBody.innerHTML += row;
-    }
-  }
-  for (let i = 0; i < kvCache.columns.length; i++) {
-    const el = document.getElementById(`header${i + 1}`);
-    el.onclick = (_e) => {
-      resetFocusedRow();
-      buildDataTable(kvCache);
-    };
-  }
-  resetFocusedRow();
-  buildFooter(kvCache);
-  makeEditableRow(kvCache);
-}
-__name(buildDataTable, "buildDataTable");
-var addBtn2 = document.getElementById("addbtn");
-var deleteBtn2 = document.getElementById("deletebtn");
-var table = document.getElementById("table");
-function buildFooter(kvCache) {
-  addBtn2.onclick = (_e) => {
-    const newRow = Object.assign({}, kvCache.schema.sample);
-    const firstColName = Object.keys(newRow)[0];
-    kvCache.set(newRow[firstColName], newRow);
-    buildDataTable(kvCache);
-    const lastRow = table.rows[table.rows.length - 1];
-    lastRow.scrollIntoView({ behavior: "smooth" });
-  };
-  deleteBtn2.onclick = (_e) => {
-    const id = focusedRow.dataset.cache_key;
-    kvCache.delete(id);
-    buildDataTable(kvCache);
-  };
-}
-__name(buildFooter, "buildFooter");
-signals.on("buildDataTable", "", (cache) => {
-  buildDataTable(cache);
-});
-
-// src/view/dom.ts
-var $ = /* @__PURE__ */ __name((id) => document.getElementById(id), "$");
-var on = /* @__PURE__ */ __name((elem, event, listener) => {
-  return elem.addEventListener(event, listener);
-}, "on");
-var popupDialog = $("popupDialog");
-var pinDialog = $("myDialog");
-var pinInput = $("pin");
-var popupText = $("popup_text");
-var pinTryCount = 0;
-var pinOK = false;
-function initDOM(kvCache) {
-  buildTableHead(kvCache);
-  document.addEventListener("keydown", function(event) {
-    if (event.ctrlKey && event.key === "b") {
-      event.preventDefault();
-      if (kvCache.CTX.DEV) console.log("Ctrl + B backup data");
-      backupData(kvCache);
-    }
-    if (event.ctrlKey && event.key === "r") {
-      event.preventDefault();
-      if (kvCache.CTX.DEV) console.log("Ctrl + R restore data");
-      restoreData();
-    }
-  });
-  on(popupDialog, "click", (event) => {
-    event.preventDefault();
-    popupDialog.close();
-  });
-  on(popupDialog, "close", (event) => {
-    event.preventDefault();
-    if (!pinOK) pinDialog.showModal();
-  });
-  on(popupDialog, "keyup", (event) => {
-    event.preventDefault();
-    popupDialog.close();
-    if (!pinOK) pinDialog.showModal();
-  });
-  pinDialog?.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-    }
-  });
-  on(pinInput, "keyup", (event) => {
-    event.preventDefault();
-    const pinIn = pinInput;
-    const pinDia = pinDialog;
-    const ecriptedPin = signals.xorEncrypt(pinIn.value);
-    if (event.key === "Enter" || ecriptedPin === kvCache.CTX.PIN) {
-      pinTryCount += 1;
-      if (ecriptedPin === kvCache.CTX.PIN) {
-        pinIn.value = "";
-        pinOK = true;
-        pinDia.close();
-      } else {
-        pinDia.close();
-        pinIn.value = "";
-        pinOK = false;
-        if (popupText) popupText.textContent = pinTryCount === 3 ? `Incorrect pin entered ${pinTryCount} times!
- Please close this Page!` : `Incorrect pin entered ${pinTryCount} times!`;
-        if (pinTryCount === 3) {
-          document.body.innerHTML = `
-               <h1>Three failed PIN attempts!</h1>
-               <h1>Please close this page!</h1>`;
-        } else {
-          popupDialog.showModal();
-        }
-      }
-    }
-  });
-  if (kvCache.CTX.BYPASS_PIN) {
-    pinOK = true;
-  } else {
-    pinDialog.showModal();
-    pinInput.focus({ focusVisible: true });
-  }
-}
-__name(initDOM, "initDOM");
-function backupData(kvCache) {
-  const jsonData = JSON.stringify(Array.from(kvCache.dbMap.entries()));
-  const link = document.createElement("a");
-  const file = new Blob([jsonData], { type: "application/json" });
-  link.href = URL.createObjectURL(file);
-  link.download = "backup.json";
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-__name(backupData, "backupData");
-function restoreData() {
-  const fileload = document.getElementById("fileload");
-  fileload?.click();
-  fileload?.addEventListener("change", function() {
-    const reader = new FileReader();
-    reader.onload = function() {
-      signals.fire("restoreCache", "", reader.result);
-      globalThis.location.reload();
-    };
-    reader.readAsText(fileload.files[0]);
-  });
-}
-__name(restoreData, "restoreData");
-
-// src/data/kvClient.ts
+// data/kvClient.ts
 var KvClient = class {
   static {
     __name(this, "KvClient");
@@ -437,7 +192,7 @@ var KvClient = class {
   }
 };
 
-// src/data/kvCache.ts
+// data/kvCache.ts
 var KvCache = class {
   static {
     __name(this, "KvCache");
@@ -567,6 +322,251 @@ var KvCache = class {
     }
   }
 };
+
+// view/mutableTableRow.ts
+var deleteBtn = document.getElementById("deletebtn");
+var addBtn = document.getElementById("addbtn");
+var focusedRow;
+var focusedCell;
+function resetFocusedRow() {
+  deleteBtn.setAttribute("hidden", "");
+  addBtn.removeAttribute("hidden");
+  focusedRow = null;
+}
+__name(resetFocusedRow, "resetFocusedRow");
+function makeEditableRow(kvCache) {
+  const rows = document.querySelectorAll("tr");
+  for (const row of Array.from(rows)) {
+    if (row.className.startsWith("headerRow")) continue;
+    row.onclick = (e) => {
+      const target = e.target;
+      if (focusedRow && focusedCell && e.target != focusedCell) {
+        focusedCell.removeAttribute("contenteditable");
+        focusedCell.className = "";
+        focusedCell.oninput = null;
+      }
+      focusedRow?.classList.remove("selected_row");
+      focusedRow = row;
+      focusedRow.classList.add("selected_row");
+      addBtn.setAttribute("hidden", "");
+      deleteBtn.removeAttribute("hidden");
+      if (target.attributes.getNamedItem("read-only")) {
+        return;
+      }
+      focusedCell = e.target;
+      focusedCell.setAttribute("contenteditable", "");
+      focusedCell.className = "editable ";
+      focusedCell.onblur = () => {
+        let key = focusedRow.dataset.cache_key;
+        const col = focusedCell.dataset.column_id || 0;
+        const columnIndex = focusedCell.dataset.column_index || 0;
+        console.log(`focusedCell.onblur key: ${key} col: ${col}, columnIndex ${columnIndex}`);
+        console.info("kvCache", kvCache.dbMap);
+        const rowObj = kvCache.get(key);
+        const currentValue = rowObj[col];
+        const thisValue = focusedCell.textContent;
+        if (currentValue !== thisValue) {
+          rowObj[col] = thisValue;
+          if (columnIndex === 0) {
+            console.log("FIXING KEY");
+            const newKey = thisValue;
+            if (key !== newKey) {
+              kvCache.delete(key);
+              key = thisValue;
+              kvCache.set(key, rowObj);
+            }
+          }
+        } else {
+          kvCache.set(key, rowObj);
+        }
+      };
+    };
+  }
+  focusedCell?.focus();
+}
+__name(makeEditableRow, "makeEditableRow");
+
+// view/customDataTable.ts
+var tablehead = document.getElementById("table-head");
+var tableBody;
+function buildTableHead(kvCache) {
+  const tr = `
+<tr class="headerRow">
+`;
+  let th = "";
+  for (let i = 0; i < kvCache.columns.length; i++) {
+    if (i === 1) {
+      th += `    <th id="header${i + 1}" 
+   data-index=${i} value=1> ${kvCache.columns[i].name} 
+</th>
+`;
+    } else {
+      th += `    <th id="header${i + 1}" 
+   data-index=${i} value=1> ${kvCache.columns[i].name} 
+</th>
+`;
+    }
+  }
+  tablehead.innerHTML += tr + th;
+  tablehead.innerHTML += `</tr>`;
+}
+__name(buildTableHead, "buildTableHead");
+function buildDataTable(kvCache) {
+  if (!tableBody) {
+    tableBody = document.getElementById("table-body");
+  }
+  const querySet = kvCache.querySet;
+  tableBody.innerHTML = "";
+  if (querySet) {
+    for (let i = 0; i < querySet.length; i++) {
+      const obj = querySet[i];
+      let row = `<tr data-cache_key="${obj[kvCache.columns[0].name]}">
+        `;
+      for (let i2 = 0; i2 < kvCache.columns.length; i2++) {
+        const ro = kvCache.columns[i2].readOnly ? " read-only" : "";
+        row += `<td data-column_index=${i2} data-column_id="${kvCache.columns[i2].name}"${ro}>${obj[kvCache.columns[i2].name]}</td>
+            `;
+      }
+      row += "</tr>";
+      tableBody.innerHTML += row;
+    }
+  }
+  for (let i = 0; i < kvCache.columns.length; i++) {
+    const el = document.getElementById(`header${i + 1}`);
+    el.onclick = (_e) => {
+      resetFocusedRow();
+      buildDataTable(kvCache);
+    };
+  }
+  resetFocusedRow();
+  buildFooter(kvCache);
+  makeEditableRow(kvCache);
+}
+__name(buildDataTable, "buildDataTable");
+var addBtn2 = document.getElementById("addbtn");
+var deleteBtn2 = document.getElementById("deletebtn");
+var table = document.getElementById("table");
+function buildFooter(kvCache) {
+  addBtn2.onclick = (_e) => {
+    const newRow = Object.assign({}, kvCache.schema.sample);
+    const firstColName = Object.keys(newRow)[0];
+    kvCache.set(newRow[firstColName], newRow);
+    buildDataTable(kvCache);
+    const lastRow = table.rows[table.rows.length - 1];
+    lastRow.scrollIntoView({ behavior: "smooth" });
+  };
+  deleteBtn2.onclick = (_e) => {
+    const id = focusedRow.dataset.cache_key;
+    kvCache.delete(id);
+    buildDataTable(kvCache);
+  };
+}
+__name(buildFooter, "buildFooter");
+signals.on("buildDataTable", "", (cache) => {
+  buildDataTable(cache);
+});
+
+// view/dom.ts
+var $ = /* @__PURE__ */ __name((id) => document.getElementById(id), "$");
+var on = /* @__PURE__ */ __name((elem, event, listener) => {
+  return elem.addEventListener(event, listener);
+}, "on");
+var popupDialog = $("popupDialog");
+var pinDialog = $("myDialog");
+var pinInput = $("pin");
+var popupText = $("popup_text");
+var pinTryCount = 0;
+var pinOK = false;
+function initDOM(kvCache) {
+  buildTableHead(kvCache);
+  document.addEventListener("keydown", function(event) {
+    if (event.ctrlKey && event.key === "b") {
+      event.preventDefault();
+      if (kvCache.CTX.DEV) console.log("Ctrl + B backup data");
+      backupData(kvCache);
+    }
+    if (event.ctrlKey && event.key === "r") {
+      event.preventDefault();
+      if (kvCache.CTX.DEV) console.log("Ctrl + R restore data");
+      restoreData();
+    }
+  });
+  on(popupDialog, "click", (event) => {
+    event.preventDefault();
+    popupDialog.close();
+  });
+  on(popupDialog, "close", (event) => {
+    event.preventDefault();
+    if (!pinOK) pinDialog.showModal();
+  });
+  on(popupDialog, "keyup", (event) => {
+    event.preventDefault();
+    popupDialog.close();
+    if (!pinOK) pinDialog.showModal();
+  });
+  pinDialog?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+    }
+  });
+  on(pinInput, "keyup", (event) => {
+    event.preventDefault();
+    const pinIn = pinInput;
+    const pinDia = pinDialog;
+    const ecriptedPin = signals.xorEncrypt(pinIn.value);
+    if (event.key === "Enter" || ecriptedPin === kvCache.CTX.PIN) {
+      pinTryCount += 1;
+      if (ecriptedPin === kvCache.CTX.PIN) {
+        pinIn.value = "";
+        pinOK = true;
+        pinDia.close();
+      } else {
+        pinDia.close();
+        pinIn.value = "";
+        pinOK = false;
+        if (popupText) popupText.textContent = pinTryCount === 3 ? `Incorrect pin entered ${pinTryCount} times!
+ Please close this Page!` : `Incorrect pin entered ${pinTryCount} times!`;
+        if (pinTryCount === 3) {
+          document.body.innerHTML = `
+               <h1>Three failed PIN attempts!</h1>
+               <h1>Please close this page!</h1>`;
+        } else {
+          popupDialog.showModal();
+        }
+      }
+    }
+  });
+  if (kvCache.CTX.BYPASS_PIN) {
+    pinOK = true;
+  } else {
+    pinDialog.showModal();
+    pinInput.focus({ focusVisible: true });
+  }
+}
+__name(initDOM, "initDOM");
+function backupData(kvCache) {
+  const jsonData = JSON.stringify(Array.from(kvCache.dbMap.entries()));
+  const link = document.createElement("a");
+  const file = new Blob([jsonData], { type: "application/json" });
+  link.href = URL.createObjectURL(file);
+  link.download = "backup.json";
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+__name(backupData, "backupData");
+function restoreData() {
+  const fileload = document.getElementById("fileload");
+  fileload?.click();
+  fileload?.addEventListener("change", function() {
+    const reader = new FileReader();
+    reader.onload = function() {
+      signals.fire("restoreCache", "", reader.result);
+      globalThis.location.reload();
+    };
+    reader.readAsText(fileload.files[0]);
+  });
+}
+__name(restoreData, "restoreData");
 
 // src/main.ts
 var appContext = {
